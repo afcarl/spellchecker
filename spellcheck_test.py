@@ -4,11 +4,11 @@ import spellcheck
 class TestSpellChecker(unittest.TestCase):
     """Tests for Spellcheck"""
 
-    notice_nums = ['1587', '1591', '1600', '1605', '1611', '1618', '1625',
+    notice0_ids  = ['1587', '1591', '1600', '1605', '1611', '1618', '1625',
             '1634', '1641', '1647', '1655', '1664', '1670', '1677', '1682',
             '1685', '1692', '1696', '1710', '1719', '1723', '1731', '1749',
             '1752', '1763', '1769', '1781', '1793']
-    errors = {
+    notice0_errors = {
         '1600': {
             'plase': 'please'
         },
@@ -68,43 +68,107 @@ class TestSpellChecker(unittest.TestCase):
             'competiotion': 'competition'
         }
     }
+    notice1_ids = ['2042', '2048', '2061', '2069', '2073', '2083', '2091',
+    '2100', '2106', '2113', '2121', '2129', '2139', '2147', '2173', '2178',
+    '2194', '2202', '2217', '2231', '2235', '2246', '2255', '2264', '2272']
+    notice1_errors = {
+            '2048': {
+                'rebok':'Reebok'
+            },
+            '2061': {
+                'occusion': 'occasion',
+                'Rasha': 'Raksha'
+            },
+            '2069': {
+                'feild': 'field',
+                'Yhere': 'Where',
+                'rebook': 'Reebok',
+                'town-tirn': 'town-turn'
+            },
+            '2073': {
+                'hodiay': 'holiday',
+                'hoiday': 'holiday',
+            },
+            '2083': {
+                'Yestaday': 'Yesterday'
+            },
+            '2091': {
+                'wigh': 'white',
+                'trite': 'treat'
+            },
+            '2100': {
+                'Tun': 'Turn'
+            },
+            '2106': {
+                'colourfull': 'colourful'
+            },
+            '2113': {
+                'ocassion': 'occasion'
+            },
+            '2173': {
+                'levove': 'leave',
+                'near-by': 'nearby'
+            },
+            '2178': {
+                'repica': 'replica',
+                'guatiar': 'guitar'
+            },
+            '2217': {
+                'eving': 'evening',
+                'bak': 'back'
+            },
+            '2231': {
+                'occassion': 'occasion',
+                'Bhandhan': 'Bandhan'
+            },
+            '2235': {
+                'occassion': 'occasion',
+                'clases': 'classes'
+            }
+    }
+    notice_ids = [notice0_ids, notice1_ids]
+    notice_errors = [notice0_errors, notice1_errors]
 
-    def test_spell_check(self):
+    def check_notice_correction(self, notice_type):
         corrected_words = 0
         incorrectly_corrected_words = 0
         unnecessarily_corrected_words = 0
-        for notice_num in self.notice_nums:
-            corrections = spellcheck.correct_notice(notice_num)
-            if notice_num not in self.errors and corrections:
+        for notice_id in self.notice_ids[notice_type]:
+            corrections = spellcheck.correct_notice(notice_type, notice_id)
+            if notice_id not in self.notice_errors[notice_type] and corrections:
                 for (word, new_word) in corrections.iteritems():
                     print(('Incorrectly changed already correct word %s to %s '
-                            'in notice %s') % (word, new_word, notice_num))
+                            'in notice %s') % (word, new_word, notice_id))
                     unnecessarily_corrected_words += 1
-            elif notice_num in self.errors:
-                notice_errors = self.errors[notice_num]
+            elif notice_id in self.notice_errors[notice_type]:
+                errors = self.notice_errors[notice_type][notice_id]
                 for (word, new_word) in corrections.iteritems():
-                    if word not in notice_errors:
+                    if word not in errors:
                         print(
                             ('Incorrectly changed already correct word %s to '
-                            '%s in notice %s') % (word, new_word, notice_num))
+                            '%s in notice %s') % (word, new_word, notice_id))
                         unnecessarily_corrected_words += 1
                     else:
-                        if notice_errors[word] == new_word:
+                        if errors[word] == new_word:
                             corrected_words += 1
                         else:
                             print(('Incorrectly changed misspelled word %s '
                                 'to %s in notice %s') %
-                                (word, new_word, notice_num))
+                                (word, new_word, notice_id))
                             incorrectly_corrected_words += 1
-                unchanged_mistakes = {word for word in notice_errors.keys() if
+                unchanged_mistakes = {word for word in errors.keys() if
                         word not in corrections}
                 for word in unchanged_mistakes:
                     print('Did not correct misspelled word %s in notice %s' %
-                            (word, notice_num))
+                            (word, notice_id))
                 incorrectly_corrected_words += len(unchanged_mistakes)
         print(('Corrected words: %d, Incorrectly corrected words: %d,'
             ' Unnecessarily corrected words: %d') % (corrected_words,
             incorrectly_corrected_words, unnecessarily_corrected_words))
+
+    def test_spell_check(self):
+        self.check_notice_correction(0)
+        self.check_notice_correction(1)
 
 if __name__ == '__main__':
     unittest.main()

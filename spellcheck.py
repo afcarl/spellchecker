@@ -3,16 +3,9 @@ import string
 from nltk.util import ngrams
 from collections import Counter
 
-
-POS_WORDS = Counter(nltk.word_tokenize(file('big.txt').read()))
-STUDENT_WORDS = Counter(nltk.word_tokenize(
-            file('../transcriptions/concatenated.txt').read().lower()))
-# Filter out uncommon words that aren't already in POS_WORDS
-for (word, cnt) in STUDENT_WORDS.items():
-    if word not in POS_WORDS and cnt < 3:
-        del STUDENT_WORDS[word]
-POS_WORDS += STUDENT_WORDS
-
+POS_WORDS = None
+STUDENT_WORDS = None
+last_notice_type = None
 
 def calc_edits1(word):
    splits     = [(word[:i], word[i:]) for i in range(len(word) + 1)]
@@ -59,8 +52,11 @@ def correct(word):
     """Returns a corrected version of misspelled word"""
     edits1 = known(calc_edits1(word))
     edits2 = known(calc_edits2(word))
-    data_words = set(word for word in edits1.union(edits2) if word in
+    data_words = set(word for word in edits1 if word in
             STUDENT_WORDS)
+    if not data_words:
+        data_words = set(word for word in edits2 if word in
+                STUDENT_WORDS)
     if not data_words:
         data_words = closest_student_word(word)
     best_data_word = (data_words and max(data_words, key=STUDENT_WORDS.get))
@@ -77,12 +73,27 @@ def should_check_word(word):
                 for letter in word[1:]))
 
 
-def correct_notice(notice_num):
+def correct_notice(notice_type, notice_id):
     """
     Returns dict with misspelled words as keys and their corrections as values
     """
+    global POS_WORDS
+    global STUDENT_WORDS
+    global last_notice_type
+    if last_notice_type != notice_type:
+        POS_WORDS = Counter(nltk.word_tokenize(file('big.txt').read()))
+        STUDENT_WORDS = Counter(nltk.word_tokenize(file(
+            '../transcriptions-notice%d/concatenated.txt'
+            % notice_type).read().lower()))
+        # Filter out uncommon words that aren't already in POS_WORDS
+        for (word, cnt) in STUDENT_WORDS.items():
+            if word not in POS_WORDS and cnt < 3:
+                del STUDENT_WORDS[word]
+        POS_WORDS += STUDENT_WORDS
+        last_notice_type = notice_type
     student_response = (
-        file('../transcriptions/transcription_%s.txt' % notice_num).read())
+        file('../transcriptions-notice%d/transcription_%s.txt'
+            % (notice_type, notice_id)).read())
     student_response_words = nltk.word_tokenize(student_response)
     corrections = {}
     for word in student_response_words:
