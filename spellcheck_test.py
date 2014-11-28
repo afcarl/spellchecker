@@ -29,7 +29,7 @@ class TestSpellChecker(unittest.TestCase):
             'participat': 'participate'
         },
         '1655': {
-            'inofrming': 'informed',
+            'inofrming': 'informing',
             'deparnment': 'department'
         },
         '1677': {
@@ -124,6 +124,9 @@ class TestSpellChecker(unittest.TestCase):
             '2235': {
                 'occassion': 'occasion',
                 'clases': 'classes'
+            },
+            '2255': {
+                'playgoround': 'playground'
             }
     }
     notice_ids = [notice0_ids, notice1_ids]
