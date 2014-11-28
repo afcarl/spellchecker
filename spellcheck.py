@@ -2,6 +2,8 @@ import nltk
 import string
 from nltk.util import ngrams
 from collections import Counter
+import enchant
+enchant_dict = enchant.Dict("en_GB")
 
 POS_WORDS = None
 STUDENT_WORDS = None
@@ -87,7 +89,7 @@ def correct_notice(notice_type, notice_id):
             % notice_type).read().lower()))
         # Filter out uncommon words that aren't already in POS_WORDS
         for (word, cnt) in STUDENT_WORDS.items():
-            if word not in POS_WORDS and cnt < 3:
+            if not enchant_dict.check(word) and cnt < 3:
                 del STUDENT_WORDS[word]
         POS_WORDS += STUDENT_WORDS
         last_notice_type = notice_type
