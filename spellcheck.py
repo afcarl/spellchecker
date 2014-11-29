@@ -4,12 +4,14 @@ from nltk.util import ngrams
 from nltk.corpus import gutenberg
 from collections import Counter
 import enchant
-enchant_dict = enchant.Dict("en_GB")
 
+
+ENCHANT_DICT = enchant.Dict("en_GB")
 POS_WORDS = nltk.FreqDist([word.lower() for word in gutenberg.words()])
 STUDENT_WORDS = None
 STUDENT_TRIGRAMS = None
 last_notice_type = None
+
 
 def calc_edits1(word):
    splits     = [(word[:i], word[i:]) for i in range(len(word) + 1)]
@@ -28,7 +30,7 @@ def calc_edits2(word):
 
 def known(words):
     return set(w for w in words if w and (w in POS_WORDS or
-        enchant_dict.check(w)))
+        ENCHANT_DICT.check(w)))
 
 
 def closest_student_word(word):
@@ -48,12 +50,16 @@ def closest_student_word(word):
 
 def calc_heuristic(word1, word2):
     """
-    Scores similarity between word1 & word2 by counting common unique letters
+    Scores similarity between word1 & word2 by counting common unique letters.
     """
     return len(set(word1).intersection(set(word2)))
 
 
 def check_trigrams(word1, word3):
+    """
+    Returns middle word from best trigram that starts with word1 and ends with
+    word3 from student data.
+    """
     trigrams = [trigram for (trigram, cnt) in STUDENT_TRIGRAMS.items()
             if trigram[0] == word1 and trigram[2] == word3 and cnt > 1]
     return len(trigrams) > 0 and max(trigrams, key=STUDENT_TRIGRAMS.get)[1]
@@ -85,12 +91,17 @@ def correct(word, prev_word=None, next_word=None):
         (edits2 and max(edits2, key=POS_WORDS.get)) or word)
 
 
+def is_valid_word(word):
+    return word[0].isalpha() and all(letter in string.ascii_lowercase
+            or letter == '-' for letter in word[1:])
+
+
 def should_check_word(word):
     """Returns true if word should be checked for spelling"""
     # don't correct anything that has digits or capital letters beyond 1st
     # letter (prob acronyms or some weird words)
-    return word.isalpha() and not (word in STUDENT_WORDS or
-            enchant_dict.check(word) or enchant_dict.check(word.lower()))
+    return is_valid_word(word) and not (word in STUDENT_WORDS or
+            ENCHANT_DICT.check(word) or ENCHANT_DICT.check(word.lower()))
 
 
 def correct_notice(notice_type, notice_id):
@@ -108,7 +119,7 @@ def correct_notice(notice_type, notice_id):
         STUDENT_WORDS = Counter(student_tokens)
         # Filter out uncommon words that aren't already in POS_WORDS
         for (word, cnt) in STUDENT_WORDS.items():
-            if enchant_dict.check(word) or cnt >= 3:
+            if ENCHANT_DICT.check(word) or cnt >= 3:
                 if word in POS_WORDS:
                     POS_WORDS[word] += cnt
                 else:

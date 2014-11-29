@@ -53,7 +53,7 @@ class TestSpellChecker(unittest.TestCase):
         '1696': {
             'Copettion': 'Competition',
             'Maida': 'Maidan',
-            'stember': 'September'
+            'stember': 'september'
         },
         '1719': {
             'sheduled': 'scheduled'
@@ -82,7 +82,7 @@ class TestSpellChecker(unittest.TestCase):
             },
             '2069': {
                 'feild': 'field',
-                'Yhere': 'Where',
+                'Yhere': 'There',
                 'rebook': 'Reebok',
                 'town-tirn': 'town-turn'
             },
