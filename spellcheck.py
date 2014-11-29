@@ -8,6 +8,7 @@ enchant_dict = enchant.Dict("en_GB")
 
 POS_WORDS = nltk.FreqDist([word.lower() for word in gutenberg.words()])
 STUDENT_WORDS = None
+STUDENT_TRIGRAMS = None
 last_notice_type = None
 
 def calc_edits1(word):
@@ -52,10 +53,20 @@ def calc_heuristic(word1, word2):
     return len(set(word1).intersection(set(word2)))
 
 
-def correct(word):
+def check_trigrams(word1, word3):
+    trigrams = [trigram for (trigram, cnt) in STUDENT_TRIGRAMS.items()
+            if trigram[0] == word1 and trigram[2] == word3 and cnt > 1]
+    return len(trigrams) > 0 and max(trigrams, key=STUDENT_TRIGRAMS.get)[1]
+
+
+def correct(word, prev_word=None, next_word=None):
     """Returns a corrected version of misspelled word"""
     edits1 = known(calc_edits1(word))
     edits2 = known(calc_edits2(word))
+    if prev_word and next_word:
+        trigram_word = check_trigrams(prev_word, next_word)
+        if trigram_word and trigram_word in edits1 or trigram_word in edits2:
+            return trigram_word
     data_words = set(word for word in edits1 if word in
             STUDENT_WORDS)
     if not data_words:
@@ -68,8 +79,6 @@ def correct(word):
     if best_edit1 and best_data_word:
         data_word_score = calc_heuristic(best_data_word, word)
         edit1_score = calc_heuristic(best_edit1, word)
-        """print('(edit1, score) = (%s, %d), (data, score) = (%s, %d)' %
-                (best_edit1, edit1_score, best_data_word, data_word_score))"""
         if edit1_score > data_word_score:
             return best_edit1
     return (best_data_word or best_edit1  or
@@ -83,17 +92,20 @@ def should_check_word(word):
     return word.isalpha() and not (word in STUDENT_WORDS or
             enchant_dict.check(word) or enchant_dict.check(word.lower()))
 
+
 def correct_notice(notice_type, notice_id):
     """
     Returns dict with misspelled words as keys and their corrections as values
     """
     global POS_WORDS
     global STUDENT_WORDS
+    global STUDENT_TRIGRAMS
     global last_notice_type
     if last_notice_type != notice_type:
-        STUDENT_WORDS = Counter(nltk.word_tokenize(file(
+        student_tokens = nltk.word_tokenize(file(
             '../transcriptions-notice%d/concatenated.txt'
-            % notice_type).read().lower()))
+            % notice_type).read().lower())
+        STUDENT_WORDS = Counter(student_tokens)
         # Filter out uncommon words that aren't already in POS_WORDS
         for (word, cnt) in STUDENT_WORDS.items():
             if enchant_dict.check(word) or cnt >= 3:
@@ -103,16 +115,20 @@ def correct_notice(notice_type, notice_id):
                     POS_WORDS[word] = cnt
             else:
                 del STUDENT_WORDS[word]
+        STUDENT_TRIGRAMS = Counter(ngrams(student_tokens, 3))
         last_notice_type = notice_type
     student_response = (
         file('../transcriptions-notice%d/transcription_%s.txt'
             % (notice_type, notice_id)).read())
     student_response_words = nltk.word_tokenize(student_response)
     corrections = {}
-    for word in student_response_words:
+    for (ind, word) in enumerate(student_response_words):
         if should_check_word(word):
             capitalized = word[0] in string.ascii_uppercase
-            new_word = correct(word.lower())
+            new_word = correct(word.lower(), ind > 0 and
+                    student_response_words[ind -1].lower(),
+                    ind < len(student_response_words) - 1
+                    and student_response_words[ind + 1].lower())
             if new_word.lower() != word.lower():
                 if capitalized:
                     new_word = new_word[0].upper() + new_word[1:]

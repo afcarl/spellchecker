@@ -26,7 +26,8 @@ class TestSpellChecker(unittest.TestCase):
             'intreasted': 'interested'
         },
         '1647': {
-            'participat': 'participate'
+            'participat': 'participate',
+            'wl': 'who'
         },
         '1655': {
             'inofrming': 'informing',
